@@ -1,0 +1,327 @@
+{% extends "layout.html" %}
+{% block content %}
+
+<style>
+  .jt-grid{
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap:16px;
+  }
+  @media (max-width: 1100px){
+    .jt-grid{ grid-template-columns: 1fr; }
+  }
+
+  .jt-box{
+    border:1px solid rgba(255,255,255,0.08);
+    background:rgba(255,255,255,0.03);
+    border-radius:16px;
+    padding:14px;
+  }
+
+  .jt-title{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    margin-bottom:6px;
+  }
+  .jt-title .t{
+    font-weight:900;
+    font-size:14px;
+  }
+  .jt-title .s{
+    font-size:12px;
+    opacity:.75;
+  }
+
+  .jt-list{
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+    margin-top:10px;
+  }
+
+  .jt-item{
+    border:1px solid rgba(255,255,255,0.08);
+    background:rgba(0,0,0,0.12);
+    border-radius:14px;
+    padding:10px 12px;
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+  }
+  .jt-item-head{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:10px;
+  }
+  .jt-item-left{
+    min-width:0;
+  }
+  .jt-item-name{
+    font-weight:900;
+    font-size:14px;
+    line-height:1.15;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    max-width: 520px;
+  }
+  .jt-item-count{
+    margin-top:4px;
+    font-size:12px;
+    opacity:.75;
+    font-variant-numeric: tabular-nums;
+  }
+  .jt-item-sub{
+    font-size:12px;
+    opacity:.85;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .jt-badge{
+    flex:0 0 auto;
+    width:28px;
+    height:28px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    border-radius:10px;
+    border:1px solid rgba(255,255,255,0.10);
+    background:rgba(255,255,255,0.04);
+    font-weight:900;
+  }
+  .jt-badge-plan{ color:#eab308; }
+  .jt-badge-done{ color:#22c55e; }
+
+  .jt-empty{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+    padding:40px 16px;
+    border:1px dashed rgba(255,255,255,0.15);
+    background:rgba(0,0,0,0.12);
+    border-radius:18px;
+    margin-top:10px;
+  }
+  .jt-empty .h{
+    font-weight:900;
+    font-size:16px;
+    margin-top:10px;
+  }
+  .jt-empty .p{
+    margin-top:6px;
+    opacity:.8;
+    font-size:12px;
+    line-height:1.6;
+    max-width:520px;
+  }
+  .jt-empty .actions{
+    margin-top:14px;
+    display:flex;
+    gap:10px;
+    justify-content:center;
+    flex-wrap:wrap;
+  }
+</style>
+
+<div class="card">
+  <div class="card-title">İş Takibi</div>
+  <div class="muted small">
+    Bu sayfada gönderimi devam eden, son gönderimi tamamlanan ve bekleyen/planlanan işler gösterilir. “Son tamamlanan” bilgisi,
+    Ayarlar’dan belirlediğiniz süre boyunca görünür (varsayılan 24 saat).
+  </div>
+</div>
+
+<div class="jt-grid mt">
+
+  <div class="card">
+    <div class="jt-title">
+      <div>
+        <div class="t">Gönderiliyor</div>
+        <div class="s">Şu anda işlemde olan gönderi.</div>
+      </div>
+    </div>
+    <div id="jtSending" class="jt-list">
+      <div class="muted small">Yükleniyor...</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="jt-title">
+      <div>
+        <div class="t">Son Tamamlanan</div>
+        <div class="s">Tamamlanan son gönderi burada görünür.</div>
+      </div>
+    </div>
+    <div id="jtDone" class="jt-list">
+      <div class="muted small">Yükleniyor...</div>
+    </div>
+  </div>
+
+</div>
+
+<div class="card mt">
+  <div class="jt-title">
+    <div>
+      <div class="t">Bekleyen / Planlı İşler</div>
+      <div class="s">Yazıcı kuyruğu gibi: sıradaki işler burada.</div>
+    </div>
+  </div>
+
+  <div id="jtPlanned" class="jt-list">
+    <div class="muted small">Yükleniyor...</div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const elSending = document.getElementById("jtSending");
+  const elDone    = document.getElementById("jtDone");
+  const elPlanned = document.getElementById("jtPlanned");
+  if(!elSending || !elDone || !elPlanned) return;
+
+  function clearBox(box){
+    while(box.firstChild) box.removeChild(box.firstChild);
+  }
+  function el(tag, cls, txt){
+    const x = document.createElement(tag);
+    if(cls) x.className = cls;
+    if(txt !== undefined && txt !== null) x.textContent = txt;
+    return x;
+  }
+
+  function fmtTR(dtStr){
+    if(!dtStr) return "";
+    let s = String(dtStr).trim();
+    s = s.replace("T"," ");
+    const dateMatch = s.match(/(\d{4})-(\d{2})-(\d{2})/);
+    if(!dateMatch) return s;
+
+    const y = dateMatch[1], mo = dateMatch[2], d = dateMatch[3];
+    const timeMatch = s.match(/(\d{2}):(\d{2})/);
+    const hh = timeMatch ? timeMatch[1] : "00";
+    const mm = timeMatch ? timeMatch[2] : "00";
+    return `${d}.${mo}.${y} ${hh}:${mm}`;
+  }
+
+  function makeItem(it){
+    const row = el("div", "jt-item");
+
+    const head = el("div", "jt-item-head");
+    const left = el("div", "jt-item-left");
+
+    const name = el("div", "jt-item-name", (it.company || it.name || "-"));
+    left.appendChild(name);
+
+    const sent = (it.sent ?? it.x ?? 0);
+    const total = (it.total ?? it.y ?? 0);
+    const cnt = el("div", "jt-item-count", `(${sent}/${total})`);
+    left.appendChild(cnt);
+
+    const badge = el("div", "jt-badge");
+    if(it.type === "done"){
+      badge.classList.add("jt-badge-done");
+      badge.textContent = "✓";
+      badge.title = "Tamamlandı";
+    }else if(it.type === "sending"){
+      badge.classList.add("jt-badge-plan");
+      badge.textContent = "⌛";
+      badge.title = "Gönderiliyor";
+    }else{
+      badge.classList.add("jt-badge-plan");
+      badge.textContent = "⌛";
+      badge.title = "Planlı";
+    }
+
+    head.appendChild(left);
+    head.appendChild(badge);
+
+    const sub = el("div", "jt-item-sub");
+    if(it.type === "done"){
+      const when = fmtTR(it.when || it.finished_at || it.ts_text || "");
+      sub.textContent = when ? `Tamamlandı: ${when}` : "Tamamlandı";
+    }else if(it.type === "sending"){
+      const when = fmtTR(it.when || it.started_at || "");
+      sub.textContent = when ? `Gönderiliyor: ${when}` : "Gönderiliyor...";
+    }else{
+      const when = fmtTR(it.next_send_at || it.when || "");
+      sub.textContent = when ? `Plan: ${when}` : "Planlı";
+    }
+
+    row.appendChild(head);
+    row.appendChild(sub);
+    return row;
+  }
+
+  function renderList(box, items, emptyTitle, emptyDesc, emptyActions){
+    clearBox(box);
+
+    if(!items || items.length === 0){
+      const empty = el("div", "jt-empty");
+      const wrap = el("div");
+      wrap.appendChild(el("div", "h", emptyTitle));
+      wrap.appendChild(el("div", "p", emptyDesc));
+      if(emptyActions){
+        const actions = el("div", "actions");
+        emptyActions.forEach(a => actions.appendChild(a));
+        wrap.appendChild(actions);
+      }
+      empty.appendChild(wrap);
+      box.appendChild(empty);
+      return;
+    }
+
+    items.forEach(it => box.appendChild(makeItem(it)));
+  }
+
+  async function refresh(){
+    try{
+      const r = await fetch("/job-tracking/feed", { cache: "no-store" });
+      if(!r.ok) return;
+      const data = await r.json();
+      if(!data || data.ok !== true) return;
+
+      const sending = Array.isArray(data.sending) ? data.sending : [];
+      const done    = Array.isArray(data.done) ? data.done : [];
+      const planned = Array.isArray(data.planned) ? data.planned : [];
+
+      renderList(
+        elSending,
+        sending,
+        "Gönderim yok",
+        "Şu anda işlemde olan gönderim bulunmuyor.",
+        null
+      );
+
+      renderList(
+        elDone,
+        done,
+        "Henüz tamamlanan yok",
+        "Gönderim tamamlanınca burada görünecek (Ayarlar’daki süre kadar).",
+        null
+      );
+
+      const goSend = el("a", "btn", "Gönder sayfasına git");
+      goSend.href = "/send";
+      const goCompanies = el("a", "btn btn-ghost", "Firmalara git");
+      goCompanies.href = "/companies";
+
+      renderList(
+        elPlanned,
+        planned,
+        "Planlı iş yok",
+        "Şu an kuyruğa alınmış gönderim bulunmuyor. Gönder sayfasından tarih/saat verip “Planla” dediğinde burada listelenir.",
+        [goSend, goCompanies]
+      );
+    }catch(e){}
+  }
+
+  refresh();
+  setInterval(refresh, 2000);
+})();
+</script>
+
+{% endblock %}

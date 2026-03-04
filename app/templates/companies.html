@@ -1,0 +1,381 @@
+﻿{% extends "layout.html" %}
+{% block content %}
+
+<div class="companies-page">
+<style>
+/* === Firma Listesi: kompakt + hizalı === */
+.company-list-card .company-table{
+  width:100% !important;
+  table-layout:fixed;
+}
+
+.company-list-card th,
+.company-list-card td{
+  vertical-align: middle !important;
+  padding: 1px 4px !important;   /* satır arası boşluğu düşür */
+}
+
+/* No / Durum / İşlem kolon genişlikleri */
+.company-list-card td.col-no,
+.company-list-card th:nth-child(1){ width:80px; }
+.company-list-card td.col-status,
+.company-list-card th:nth-child(5){ width:130px; }
+.company-list-card td.col-action,
+.company-list-card th:nth-child(6){ width:130px; }
+
+/* Satır içindeki tüm form elemanları aynı yükseklik */
+.company-list-card input.input,
+.company-list-card select.input,
+.company-list-card .btn.btn-sm{
+  height:40px !important;
+  line-height:40px !important;    /* metinler tam ortada */
+  box-sizing:border-box !important;
+}
+
+/* Input/select’lerde line-height 40px çok sert gelirse: input’a özel */
+.company-list-card input.input,
+.company-list-card select.input{
+  line-height:1 !important;
+  padding-top:0 !important;
+  padding-bottom:0 !important;
+}
+
+/* Inputlar hücreyi doldursun, min-width’leri bastır */
+.company-list-card input.input,
+.company-list-card select.input{
+  width:100% !important;
+  min-width:0 !important;
+}
+
+/* No metni inputlarla aynı dikey hatta dursun */
+.company-list-card td.col-no{
+  line-height:40px !important;
+  white-space:nowrap;
+}
+
+/* Form hücreleri bölmesin (mevcut yapına uygun) */
+.company-list-card .row-edit{
+  display:contents;
+}
+/* Excel kartı: Dosya seç + Yükle aynı satırda */
+.excel-card .excel-bar{
+  display:flex !important;
+  align-items:center !important;
+  gap:12px !important;
+  flex-wrap:nowrap !important;
+}
+
+.excel-card .excel-upload{
+  display:flex !important;
+  align-items:center !important;
+  gap:12px !important;
+  flex-wrap:nowrap !important;
+  flex:1 1 auto !important;
+  margin:0 !important;
+  min-width:320px;
+}
+
+/* file input satırı doldursun, Yükle sağda kalsın */
+.excel-card .excel-file{
+  flex:1 1 auto !important;
+  min-width:260px !important;
+  height:40px !important;
+  box-sizing:border-box !important;
+}
+
+/* dar ekranda alt alta geçebilir */
+@media (max-width: 900px){
+  .excel-card .excel-bar{ flex-wrap:wrap !important; }
+  .excel-card .excel-upload{ flex-wrap:wrap !important; min-width:0; }
+  .excel-card .excel-file{ flex:1 1 100% !important; min-width:0 !important; }
+}
+
+/* Durum sütunu: içerik ortalı + tek satır */
+.company-list-card td.col-status{
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+}
+
+/* Checkbox + yazı: yan yana, kaymasın */
+.company-list-card .active-check{
+  display:inline-flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  gap:10px !important;
+  white-space:nowrap !important;
+  height:40px !important;
+  line-height:1 !important;
+}
+
+/* Kutuyu büyüt */
+.company-list-card .active-check input[type="checkbox"]{
+  width:24px !important;
+  height:24px !important;
+  margin:0 !important;
+  accent-color:#22c55e;
+}
+
+/* Yazı tam ortada ve sağda */
+.company-list-card .active-check span{
+  display:inline-block !important;
+  line-height:1 !important;
+}
+/* İşlem sütunu: hücre içinde ortala */
+.company-list-card td.col-action{
+  text-align:center !important;
+  vertical-align: middle !important;
+  padding: 6px 10px !important;
+}
+
+/* Butonun kendisini ortalı ve sabit ölçüde yap */
+.company-list-card td.col-action .btn.btn-sm{
+  display:inline-flex !important;
+  align-items:center !important;     /* yazı dikey ortada */
+  justify-content:center !important; /* yazı yatay ortada */
+  height:40px !important;
+  min-width:90px;                    /* butonlar aynı genişlikte dursun */
+  line-height:1 !important;
+  padding:0 14px !important;
+  box-sizing:border-box !important;
+}
+/* Kolon genişlik dağılımı */
+.company-list-card th:nth-child(3),
+.company-list-card td:nth-child(3){ width: 220px; }  /* Anahtar */
+
+.company-list-card th:nth-child(4),
+.company-list-card td:nth-child(4){ width: 160px; }  /* Telefon */
+
+/* Firma Ekle kartı: Durum satırını kilitle */
+.add-card .add-action-row{
+  display:flex !important;
+  align-items:center !important;
+  justify-content:flex-start !important;
+  gap:14px !important;
+  height:40px !important;
+}
+
+/* Checkbox + yazı yan yana, kaymasın */
+.add-card .active-check{
+  display:inline-flex !important;
+  align-items:center !important;
+  gap:10px !important;
+  white-space:nowrap !important;
+  height:40px !important;
+  line-height:1 !important;
+  margin:0 !important;
+}
+
+/* Kutuyu büyüt (kesin) */
+.add-card .active-check input[type="checkbox"]{
+  width:24px !important;
+  height:24px !important;
+  min-width:24px !important;
+  min-height:24px !important;
+  margin:0 !important;
+  accent-color:#22c55e;
+}
+
+/* Yazı sağda ortalı dursun */
+.add-card .active-check span{
+  display:inline-block !important;
+  line-height:1 !important;
+}
+
+/* Buton checkbox ile aynı hatta */
+.add-card .add-action-row .btn{
+  height:40px !important;
+  display:inline-flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  padding:0 16px !important;
+  line-height:1 !important;
+}
+/* Companies sayfasında browser scroll kapat */
+.companies-page{
+  height: calc(100vh - 90px);     /* üst header yüksekliğine göre gerekirse 80/90/100 ayarla */
+  overflow: hidden;
+  display:flex;
+  flex-direction:column;
+}
+
+/* Üst iki kart (Excel + Firma Ekle) normal kalsın */
+.companies-page .grid2{
+  flex: 0 0 auto;
+}
+
+/* Firma Listesi kartı kalan alanı alsın ve içinde scroll yapsın */
+.companies-page .company-list-card{
+  flex: 1 1 auto;
+  min-height: 0;                 /* flex içinde overflow için kritik */
+  display:flex;
+  flex-direction:column;
+}
+
+/* Tablo alanı kart içinde scroll */
+.companies-page .company-list-card .table-wrap{
+  flex: 1 1 auto;
+  min-height: 0;                 /* kritik */
+  overflow: auto;
+}
+
+/* Companies sayfasında browser scroll kapat */
+.companies-page{
+  height: calc(100vh - 90px);   /* gerekiyorsa 80/90/100 değiştir */
+  overflow: hidden;
+  display:flex;
+  flex-direction:column;
+}
+
+/* Üst iki kart (Excel + Firma Ekle) normal kalsın */
+.companies-page .grid2{
+  flex: 0 0 auto;
+}
+
+/* Firma Listesi kartı kalan alanı alsın ve içinde scroll yapsın */
+.companies-page .company-list-card{
+  flex: 1 1 auto;
+  min-height: 0;              /* kritik */
+  display:flex;
+  flex-direction:column;
+}
+
+/* Tablo alanı kart içinde scroll */
+.companies-page .company-list-card .table-wrap{
+  flex: 1 1 auto;
+  min-height: 0;              /* kritik */
+  overflow: auto;
+}
+/* Firma Listesi kartı: yüksekliği sınırla, içinde scroll */
+.company-list-card{
+  max-height: 570px;          /* istediğin değere göre 450/520/600 */
+  display:flex;
+  flex-direction:column;
+}
+
+/* Tablo alanı kart içinde kaydırılsın */
+.company-list-card .table-wrap{
+  overflow:auto;
+  flex:1 1 auto;
+  min-height:0;
+}
+</style>
+
+<div class="grid2 mt">
+  <!-- Excel kartı -->
+<div class="card excel-card">
+    <div class="section-title">Toplu Firma Yükle (Excel)</div>
+
+    <div class="excel-bar mt">
+      <a class="btn" href="/companies/export">Örnek/Mevcut İndir</a>
+
+      <form class="excel-upload" method="post" action="/companies/import" enctype="multipart/form-data">
+        <input class="excel-file" type="file" name="file" accept=".xlsx" required>
+        <button class="btn" type="submit">Yükle</button>
+      </form>
+    </div>
+
+    <div class="muted small mt">
+      Excel kolonları:
+      <code>firma_adi</code>, <code>eslestirme_anahtari</code>, <code>telefon</code>,
+      <code>aktif</code>, <code>auto_enabled</code>, <code>next_send_at_local</code>
+    </div>
+    <div class="muted small mt">
+      Not: Örnek dosyayı indirip firma ve telefon numaralarını kaydediniz. Dosya Seç ile firma listenizi seçtikten sonra Yükle tuşuna basınız.
+    </div>
+  </div>
+
+  <!-- Firma ekle kartı -->
+<div class="card add-card">
+  <div class="section-title">Firma Ekle</div>
+
+  <form method="post" action="/companies/add" class="form">
+    <div class="grid2">
+      <div class="field">
+        <label>Firma Adı</label>
+        <input name="name" placeholder="Örn: PitiPiti.com.tr Yazılım & e-Ticaret" required>
+      </div>
+      <div class="field">
+        <label>Eşleştirme Anahtarı</label>
+        <input name="match_key" placeholder="Örn: Pitipiti" required>
+      </div>
+    </div>
+
+    <div class="grid2">
+      <div class="field">
+        <label>WhatsApp Telefon</label>
+        <input name="whatsapp_phone" placeholder="+905...." required>
+      </div>
+
+      <div class="field add-actions">
+        <label>Durum</label>
+
+        <div class="add-action-row">
+          <input type="hidden" name="is_active" value="0">
+
+          <label class="active-check">
+            <input type="checkbox" name="is_active" value="1" checked
+                   onchange="this.nextElementSibling.textContent = this.checked ? 'Aktif' : 'Pasif'">
+            <span>Aktif</span>
+          </label>
+
+          <button class="btn" type="submit">Firma Ekle</button>
+        </div>
+      </div>
+    </div>
+  </form>
+</div>
+</div>
+
+<!-- Firma listesi -->
+<div class="card mt company-list-card">
+  <div class="section-title">Firma Listesi</div>
+
+  <div class="table-wrap mt">
+    <table class="table company-table">
+      <thead>
+        <tr>
+          <th>No</th>
+          <th>Firma</th>
+          <th>Anahtar</th>
+          <th>Telefon</th>
+          <th>Durum</th>
+          <th>İşlem</th>
+        </tr>
+      </thead>
+      <tbody>
+      {% for c in companies %}
+        <tr>
+          <td class="col-no">#{{ c.id }}</td>
+
+          <td>
+            <form method="post" action="/companies/update" class="row-edit">
+              <input type="hidden" name="company_id" value="{{ c.id }}">
+
+              <input class="input" name="name" value="{{ c.name }}">
+          </td>
+
+          <td><input class="input" name="match_key" value="{{ c.match_key }}"></td>
+          <td><input class="input" name="whatsapp_phone" value="{{ c.whatsapp_phone }}"></td>
+
+<td class="col-status">
+  <input type="hidden" name="is_active" value="0">
+  <label class="active-check">
+    <input type="checkbox" name="is_active" value="1"
+           {% if c.is_active==1 %}checked{% endif %}
+           onchange="this.nextElementSibling.textContent = this.checked ? 'Aktif' : 'Pasif'">
+    <span>{% if c.is_active==1 %}Aktif{% else %}Pasif{% endif %}</span>
+  </label>
+</td>
+          <td class="col-action">
+              <button class="btn btn-sm" type="submit">Kaydet</button>
+            </form>
+          </td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+</div>
+{% endblock %}

@@ -1,0 +1,326 @@
+﻿{% extends "layout.html" %}
+{% block content %}
+
+<!-- DASHBOARD_PREMIUM_V2 (tek dosya) -->
+<style>
+  .dash-grid{
+    display:grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap:16px;
+  }
+  @media (max-width: 1200px){
+    .dash-grid{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+  @media (max-width: 720px){
+    .dash-grid{ grid-template-columns: 1fr; }
+  }
+
+  .dash-card{
+    padding:16px;
+    border:1px solid rgba(255,255,255,0.08);
+    background:rgba(0,0,0,0.12);
+    border-radius:16px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+  }
+
+  .dash-kpi-top{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    margin-bottom:10px;
+  }
+  .dash-kpi-title{
+    font-weight:900;
+    letter-spacing:.2px;
+    opacity:.95;
+  }
+  .dash-kpi-badge{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    padding:6px 10px;
+    border-radius:999px;
+    border:1px solid rgba(255,255,255,0.10);
+    background:rgba(255,255,255,0.04);
+    font-size:12px;
+    font-weight:800;
+    white-space:nowrap;
+  }
+  .dash-kpi-badge .dot{
+    width:8px;height:8px;border-radius:999px;
+    background:rgba(255,255,255,0.35);
+  }
+  .dash-kpi-value{
+    font-size:34px;
+    font-weight:900;
+    line-height:1;
+    margin-top:2px;
+  }
+  .dash-kpi-sub{
+    margin-top:10px;
+    font-size:12px;
+    opacity:.75;
+    line-height:1.5;
+  }
+
+  .dash-2col{
+    display:grid;
+    grid-template-columns: 1.2fr 1fr;
+    gap:16px;
+  }
+  @media (max-width: 1100px){
+    .dash-2col{ grid-template-columns: 1fr; }
+  }
+
+  .dash-section-title{
+    font-weight:900;
+    margin-bottom:10px;
+  }
+
+  .dash-chips{
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+    margin-top:10px;
+  }
+  .dash-chip{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    padding:8px 12px;
+    border-radius:999px;
+    border:1px solid rgba(255,255,255,0.10);
+    background:rgba(255,255,255,0.04);
+    font-weight:800;
+    font-size:12px;
+  }
+  .dash-chip .dot{
+    width:8px;height:8px;border-radius:999px;
+    background:rgba(255,255,255,0.35);
+  }
+  .dash-chip.ok .dot{ background:#22c55e; }
+  .dash-chip.bad .dot{ background:#ef4444; }
+
+  .dash-kv{
+    display:grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap:12px;
+    margin-top:14px;
+  }
+  @media (max-width: 1100px){
+    .dash-kv{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+  .dash-kv .item{
+    border:1px solid rgba(255,255,255,0.08);
+    background:rgba(255,255,255,0.03);
+    border-radius:14px;
+    padding:12px;
+  }
+  .dash-kv .k{ font-size:12px; opacity:.75; }
+  .dash-kv .v{ font-weight:900; margin-top:6px; }
+
+  .dash-actions{
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+    margin-top:12px;
+  }
+  .dash-actions .btn{
+    height:40px;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    padding:0 14px;
+    line-height:1;
+    white-space:nowrap;
+  }
+
+  .dash-list{
+    margin-top:12px;
+    border:1px solid rgba(255,255,255,0.08);
+    background:rgba(255,255,255,0.03);
+    border-radius:14px;
+    overflow:hidden;
+  }
+  .dash-list .row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    padding:10px 12px;
+    border-top:1px solid rgba(255,255,255,0.06);
+  }
+  .dash-list .row:first-child{ border-top:0; }
+  .dash-list .left{
+    display:flex;
+    flex-direction:column;
+    gap:2px;
+    min-width:0;
+  }
+  .dash-list .title{
+    font-weight:900;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+  .dash-list .sub{
+    font-size:12px;
+    opacity:.75;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+  .dash-list .right{
+    font-size:12px;
+    opacity:.85;
+    white-space:nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .dash-empty{
+    margin-top:12px;
+    padding:14px;
+    border:1px dashed rgba(255,255,255,0.18);
+    background:rgba(255,255,255,0.03);
+    border-radius:14px;
+    line-height:1.6;
+  }
+</style>
+
+<!-- KPI'lar -->
+<div class="dash-grid">
+
+  <div class="dash-card">
+    <div class="dash-kpi-top">
+      <div class="dash-kpi-title">Bekleyen Gönderimler</div>
+      <div class="dash-kpi-badge" title="Planlı / bekleyen işler">
+        <span class="dot"></span> İş
+      </div>
+    </div>
+    <div class="dash-kpi-value">{{ kpi_pending or 0 }}</div>
+    <div class="dash-kpi-sub">Planlanan iş sayısı. Detay: <b>İş Takibi</b> sayfası.</div>
+  </div>
+
+  <div class="dash-card">
+    <div class="dash-kpi-top">
+      <div class="dash-kpi-title">Aktif Firmalar</div>
+      <div class="dash-kpi-badge" title="Aktif firma sayısı">
+        <span class="dot"></span> Firma
+      </div>
+    </div>
+    <div class="dash-kpi-value">{{ kpi_companies_active or 0 }}</div>
+    <div class="dash-kpi-sub">Aktif firmalar üzerinden planlama/gönderim yapılır.</div>
+  </div>
+
+  <div class="dash-card">
+    <div class="dash-kpi-top">
+      <div class="dash-kpi-title">Bugün Gönderilen</div>
+      <div class="dash-kpi-badge" title="Bugün gönderilen dosya sayısı">
+        <span class="dot"></span> Dosya
+      </div>
+    </div>
+    <div class="dash-kpi-value">{{ daily.files_sent }}</div>
+    <div class="dash-kpi-sub">Günlük sayaç. Limitler: <b>Ayarlar → Limitler</b>.</div>
+  </div>
+
+  <div class="dash-card">
+    <div class="dash-kpi-top">
+      <div class="dash-kpi-title">Son 24 Saat Hata</div>
+      <div class="dash-kpi-badge" title="Son 24 saatteki hata sayısı">
+        <span class="dot"></span> Log
+      </div>
+    </div>
+    <div class="dash-kpi-value">{{ kpi_errors_24h or 0 }}</div>
+    <div class="dash-kpi-sub">Detay: <b>Ayarlar → Loglar</b>.</div>
+  </div>
+
+</div>
+
+<!-- Sistem Durumu + Hızlı Başlangıç -->
+<div class="dash-2col mt">
+
+  <div class="dash-card">
+    <div class="dash-section-title">Sistem Durumu</div>
+
+    <div class="dash-chips">
+      <span class="dash-chip {% if wa_ok %}ok{% else %}bad{% endif %}" title="{{ wa_info }}">
+        <span class="dot"></span>
+        WhatsApp: {% if wa_ok %}Bağlı{% else %}Bağlı değil{% endif %}
+      </span>
+
+      <span class="dash-chip" title="Lisans / demo durumu">
+        <span class="dot"></span>
+        Demo: {{ trial.remaining_days }} gün · Durum: {{ trial.state }}
+      </span>
+
+      <span class="dash-chip" title="Günlük limit özeti">
+        <span class="dot"></span>
+        Mesaj: {{ daily.messages_sent }}/{{ limits.daily_msg_limit }} · Dosya: {{ daily.files_sent }}/{{ limits.daily_file_limit }} · MB: {{ (daily.bytes_sent//(1024*1024)) }}/{{ limits.daily_mb_limit }}
+      </span>
+    </div>
+
+    {% if not wa_ok %}
+      <div class="alert alert-bad mt">WhatsApp servisi hazır değil: {{ wa_info }}</div>
+    {% endif %}
+
+    <div class="dash-kv">
+      <div class="item">
+        <div class="k">Sunucu</div>
+        <div class="v">Çalışıyor</div>
+      </div>
+      <div class="item">
+        <div class="k">Panel</div>
+        <div class="v">Hazır</div>
+      </div>
+      <div class="item">
+        <div class="k">Kalan (Mesaj)</div>
+        <div class="v">{{ remaining.msg }}</div>
+      </div>
+      <div class="item">
+        <div class="k">Kalan (Dosya / MB)</div>
+        <div class="v">{{ remaining.file }} · {{ remaining.mb }}</div>
+      </div>
+    </div>
+
+    {% if last_error_preview %}
+      <div class="dash-list mt">
+        <div class="row">
+          <div class="left">
+            <div class="title">Son hata</div>
+            <div class="sub">{{ last_error_preview }}</div>
+          </div>
+          <div class="right">Loglarda</div>
+        </div>
+      </div>
+    {% endif %}
+  </div>
+
+  <div class="dash-card">
+    <div class="dash-section-title">Hızlı Başlangıç</div>
+    <div class="muted small">İlk kurulum / boş sistemde akışın net olması için.</div>
+
+    <div class="dash-actions">
+      <a class="btn btn-ghost" href="/settings">Ayarları kontrol et</a>
+      <a class="btn btn-ghost" href="/companies">Firmaları ekle / Excel</a>
+      <a class="btn btn-ghost" href="/send">Tara / Planla / Gönder</a>
+      <a class="btn btn-ghost" href="/job-tracking">İş Takibi</a>
+    </div>
+
+    {% if (kpi_companies_active or 0) == 0 %}
+      <div class="dash-empty">
+        <b>Başlamak için:</b><br>
+        1) <b>Firmalar</b> sayfasından firma ekleyin veya Excel yükleyin.<br>
+        2) <b>Ayarlar</b> sayfasında kaynak/arşiv klasörlerini kontrol edin.<br>
+        3) <b>Gönder</b> sayfasında “Tara / Yenile” ile evrakları toplayın.
+      </div>
+    {% else %}
+      <div class="dash-empty">
+        <b>İpucu:</b> Planladığınız işler <b>İş Takibi</b> ekranında otomatik listelenir.
+      </div>
+    {% endif %}
+  </div>
+
+</div>
+
+{% endblock %}

@@ -1,0 +1,84 @@
+﻿{% extends "layout.html" %}
+{% block content %}
+
+<div class="card">
+  <div class="card-title">Arşiv</div>
+  <div class="muted small">Gönderilen evraklar burada listelenir. Aylık klasöre taşınan dosyalar DB üzerinden takip edilir.</div>
+
+  <div class="actions-row mt" style="gap:10px; flex-wrap:wrap;">
+    <form method="get" action="/archive" class="inline" style="gap:10px; flex-wrap:wrap;">
+      <input class="input" name="q" value="{{ q }}" placeholder="Firma / dosya adı ara..." style="min-width:260px;">
+      <select class="input" name="status" style="min-width:160px;">
+        <option value="ARCHIVED" {% if status=='ARCHIVED' %}selected{% endif %}>Arşiv</option>
+        <option value="MISSING" {% if status=='MISSING' %}selected{% endif %}>Kayıp</option>
+        <option value="READY" {% if status=='READY' %}selected{% endif %}>Hazır</option>
+        <option value="SENT" {% if status=='SENT' %}selected{% endif %}>Gönderildi</option>
+      </select>
+      <button class="btn" type="submit">Filtrele</button>
+      <a class="btn btn-ghost" href="/archive">Yenile</a>
+    </form>
+  </div>
+</div>
+
+<div class="card mt">
+  {% if items and items|length > 0 %}
+    <div class="table table-compact mt">
+      <div class="tr th" style="grid-template-columns: 70px 1.2fr 1.2fr 170px 140px 120px;">
+        <div>No</div>
+        <div>Firma</div>
+        <div>Dosya</div>
+        <div>Tarih</div>
+        <div>Durum</div>
+        <div>Dosya</div>
+      </div>
+
+      {% for it in items %}
+      <div class="tr" style="grid-template-columns: 70px 1.2fr 1.2fr 170px 140px 120px; align-items:center;">
+        <div class="muted">#{{ it.id }}</div>
+
+        <div style="font-weight:800;">{{ it.company }}</div>
+
+        <div style="display:flex; flex-direction:column; gap:4px;">
+          <div style="font-weight:700;">{{ it.filename }}</div>
+          <div class="muted small" title="{{ it.path }}" style="max-width:520px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+            {{ it.path }}
+          </div>
+          {% if it.last_error %}
+            <div class="muted small" style="opacity:.9;">{{ it.last_error }}</div>
+          {% endif %}
+        </div>
+
+        <div class="muted small" style="font-variant-numeric:tabular-nums;">{{ it.archived_at_tr }}</div>
+
+        <div>
+          <span class="badge {% if it.status=='ARCHIVED' %}badge-ok{% elif it.status=='MISSING' %}badge-bad{% else %}badge-muted{% endif %}">
+            {% if it.status=='ARCHIVED' %}Arşivlendi{% elif it.status=='MISSING' %}Kayıp{% else %}{{ it.status }}{% endif %}
+          </span>
+        </div>
+
+        <div>
+          {% if it.exists %}
+            <span class="badge badge-ok">Var</span>
+          {% else %}
+            <span class="badge badge-bad">Yok</span>
+          {% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="empty-state" style="padding:26px; text-align:center;">
+      <div style="font-size:40px; margin-bottom:8px;">📦</div>
+      <div style="font-weight:900; font-size:18px;">Arşiv boş</div>
+      <div class="muted small mt" style="max-width:620px; margin:0 auto;">
+        Henüz arşive taşınmış evrak bulunmuyor. Gönderim yaptıktan sonra dosyalar <b>aylık arşiv klasörüne</b> taşınır ve burada görünür.
+      </div>
+      <div class="mt" style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
+        <a class="btn" href="/send">Gönder sayfasına git</a>
+        <a class="btn btn-ghost" href="/companies">Firmalara git</a>
+      </div>
+    </div>
+  {% endif %}
+</div>
+
+{% endblock %}

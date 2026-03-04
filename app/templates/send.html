@@ -1,0 +1,353 @@
+﻿{% extends "layout.html" %}
+{% block content %}
+<style>
+
+/* =========================
+   SEND list kartı: scroll
+   ========================= */
+.send-list-card{
+  max-height: calc(100vh - 280px);
+  display:flex;
+  flex-direction:column;
+}
+.send-list-card .table{
+  overflow:auto;
+  flex:1 1 auto;
+  min-height:0;
+}
+
+/* =========================
+   Satır sıkılığı
+   ========================= */
+.send-list-card .tr{
+  padding: 2px 8px !important;
+  align-items:center !important;
+}
+.send-list-card .tr.th{
+  padding: 8px 10px !important;
+}
+
+/* =========================
+   Kolon hizaları
+   ========================= */
+.send-list-card .col-check,
+.send-list-card .col-ready,
+.send-list-card .col-plan,
+.send-list-card .col-status,
+.send-list-card .col-action{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+
+/* Firma: tamamen sola hizalı */
+.send-list-card .col-firma{
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  align-items:flex-start !important;
+  text-align:left !important;
+  padding: 4px 0 !important;
+  gap: 4px;
+}
+.send-list-card .col-firma .firma-name{
+  font-weight:800;
+  font-size:15px;
+  line-height:1.15;
+  margin:0;
+}
+/* Header "Firma" sola */
+.send-list-card .tr.th > div:nth-child(3){
+  text-align:left;
+}
+
+/* =========================
+   Planlama satırı: tek satır
+   ========================= */
+.send-list-card .send-plan-row{
+  display:flex !important;
+  align-items:center !important;
+  gap:10px !important;
+  flex-wrap:nowrap !important;
+}
+.send-list-card .send-plan-row .input-dt{
+  width:190px !important;
+}
+.send-list-card .send-plan-row .row-check{
+  display:flex !important;
+  align-items:center !important;
+  gap:6px !important;
+  white-space:nowrap !important;
+  margin:0 !important;
+}
+
+/* =========================
+   Buton/checkbox standardı
+   ========================= */
+.send-list-card .actions-inline{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+.send-list-card .btn.btn-sm{
+  height:40px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  padding:0 14px;
+  line-height:1;
+}
+
+.send-list-card input[type="checkbox"]{
+  width:18px;
+  height:18px;
+  margin:0;
+  accent-color:#22c55e;
+}
+
+/* Toplu işlemler checkbox standardı */
+.row-check-lg{
+  display:inline-flex !important;
+  align-items:center !important;
+  gap:10px !important;
+  white-space:nowrap !important;
+  user-select:none !important;
+  height:40px !important;
+  line-height:1 !important;
+}
+.row-check-lg input[type="checkbox"]{
+  width:20px !important;
+  height:20px !important;
+  margin:0 !important;
+  accent-color:#22c55e;
+}
+.row-check-lg span{
+  display:inline-block !important;
+  line-height:1 !important;
+}
+
+/* =========================
+   Seç sütunu kaydırma (başlık + hücreler birlikte)
+   ========================= */
+/* 2. kolon = Seç */
+.send-list-card .tr > div:nth-child(2){
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  transform: translateX(-15px); /* ihtiyaca göre -4 / -6 / -8 */
+}
+/* col-check ekstra margin KULLANMIYORUZ (çakışma olmasın) */
+
+/* =========================
+   datetime-local: tıklanınca picker (ikon rengiyle uğraşmıyoruz)
+   ========================= */
+input[type="datetime-local"]{
+  cursor:pointer;
+}
+
+/* SADECE SATIRLAR: Seç (2. kolon) + Firma (3. kolon) sola kay */
+.send-list-card .tr:not(.th) > div:nth-child(2){
+  justify-content:flex-start !important;
+  transform: translateX(-24px);   /* -6 / -10 / -14 ayarla */
+}
+
+.send-list-card .tr:not(.th) > div:nth-child(3){
+  transform: translateX(-24px);   /* aynı miktar */
+}
+.send-list-card .tr:not(.th) > div:nth-child(5){
+  transform: translateX(-44px);   /* aynı miktar */
+}
+
+.send-list-card .tr:not(.th) > div:nth-child(6){
+  transform: translateX(-44px);   /* aynı miktar */
+}
+
+.send-list-card .tr:not(.th) > div:nth-child(7){
+  transform: translateX(-44px);   /* aynı miktar */
+}
+
+.send-list-card .tr:not(.th) > div:nth-child(8){
+  transform: translateX(-80px);   /* aynı miktar */
+}
+
+</style>
+
+<!-- ÜSTTEKİ 2 KART: YAN YANA -->
+<div class="grid2 mt">
+
+  <div class="card">
+    <div class="card-title">Toplu İşlemler</div>
+
+    <div class="actions-row mt">
+      <form method="post" action="/send/scan" class="inline">
+        <button class="btn" type="submit">Tara / Yenile</button>
+      </form>
+
+      <button class="btn btn-ghost" type="button" onclick="ppSelectAll(true)">Hepsini Seç</button>
+      <button class="btn btn-ghost" type="button" onclick="ppSelectAll(false)">Seçimi Kaldır</button>
+
+      <form id="bulkPlanForm" method="post" action="/send/plan_bulk" class="inline" style="gap:10px; flex-wrap:wrap;">
+        <input type="hidden" name="company_ids" id="bulk_plan_ids" value="">
+        <input class="input" type="datetime-local" name="next_send_at_local" id="bulk_plan_dt"
+       style="min-width:210px"
+       onclick="this.showPicker && this.showPicker()"
+       required>
+        <label class="row-check row-check-lg muted small">
+  <input type="checkbox" name="auto_enabled" value="1" checked>
+  <span>Otomatik</span>
+</label>
+        <button class="btn" type="submit" onclick="return ppFillBulk('plan')">Seçilenleri Planla</button>
+      </form>
+
+      <form id="bulkSendForm" method="post" action="/send/instant_bulk" class="inline">
+        <input type="hidden" name="company_ids" id="bulk_send_ids" value="">
+        <button class="btn" type="submit" onclick="return ppFillBulk('send')">Seçilenleri Hemen Gönder</button>
+      </form>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">Gönder Kontrol Merkezi</div>
+    <div class="muted small">Hazır dosya yoksa gönderim yapılmaz. Planlama 24 saat çalışır.</div>
+
+    <div class="chips mt">
+      <span class="chip {% if wa_ok %}chip-ok{% else %}chip-bad{% endif %}">
+        WhatsApp: {% if wa_ok %}Bağlı{% else %}Bağlı değil{% endif %}
+      </span>
+      <span class="chip">
+        Bugün: {{ daily.messages_sent }}/{{ limits.daily_msg_limit }} (kalan {{ remaining.msg }}) mesaj ·
+        {{ daily.files_sent }}/{{ limits.daily_file_limit }} (kalan {{ remaining.file }}) dosya ·
+        {{ (daily.bytes_sent//(1024*1024)) }}/{{ limits.daily_mb_limit }} (kalan {{ remaining.mb }}) MB
+      </span>
+    </div>
+
+    {% if not wa_ok %}
+      <div class="alert alert-bad mt">WhatsApp servisi hazır değil: {{ wa_info }}</div>
+    {% endif %}
+    {% if scan_err %}
+      <div class="alert alert-bad mt">{{ scan_err }}</div>
+    {% endif %}
+
+    <details class="mt">
+      <summary class="muted small">Sistem detayı (göster/gizle)</summary>
+      <div class="muted small mt" style="opacity:.9; line-height:1.6">
+        {{ scan_msg if scan_msg else "-" }}
+      </div>
+    </details>
+  </div>
+
+</div>
+
+<!-- TABLO KARTI -->
+<div class="card mt send-list-card">
+  <div class="table table-compact mt">
+    <div class="tr th" style="grid-template-columns: 50px 36px 1.2fr 170px 170px 320px 260px 210px;">
+      <div>No</div>
+      <div>Seç</div>
+      <div>Firma</div>
+      <div>Telefon</div>
+      <div>Hazır Dosya</div>
+      <div>Planlama</div>
+      <div>Durum</div>
+      <div>İşlem</div>
+    </div>
+
+    {% for c in companies %}
+    <div class="tr" style="grid-template-columns: 70px 42px 1.2fr 170px 170px 320px 260px 210px;">
+      <div class="muted">#{{ c.id }}</div>
+
+      <div class="col-check">
+        <input class="row-select" type="checkbox" value="{{ c.id }}">
+      </div>
+
+<div class="col-firma">
+  <div class="firma-name">{{ c.name }}</div>
+</div>
+      <div style="font-variant-numeric: tabular-nums;">{{ c.whatsapp_phone }}</div>
+
+      <div class="col-ready">
+        <span class="badge {% if c.ready_count>0 %}badge-ok{% else %}badge-muted{% endif %}">
+          {{ c.ready_count }} dosya · {{ c.ready_human }}
+        </span>
+      </div>
+
+      <div class="col-plan">
+        <form method="post" action="/send/plan" class="send-plan-row">
+          <input type="hidden" name="company_id" value="{{ c.id }}">
+          <input class="input input-dt" type="datetime-local" name="next_send_at_local"
+       value="{{ c.next_send_at_local|replace(' ','T') }}"
+       onclick="this.showPicker && this.showPicker()">
+          <label class="row-check muted small">
+            <input type="checkbox" name="auto_enabled" value="1" {% if c.auto_enabled==1 %}checked{% endif %}>
+            Otomatik
+          </label>
+          <button class="btn btn-ghost btn-sm" type="submit">Planla</button>
+        </form>
+      </div>
+
+      <div class="col-status">
+        {% if c.last_send_status %}
+          <div style="display:flex; flex-direction:column; gap:6px; align-items:flex-start;">
+            <span class="badge
+              {% if c.last_send_status in ['SENT','DONE'] %}badge-ok
+              {% elif c.last_send_status in ['ERROR','PAUSED_LIMIT'] %}badge-bad
+              {% elif c.last_send_status in ['SENDING'] %}badge-muted
+              {% else %}badge-muted{% endif %}">
+              {% if c.last_send_status in ['SENT','DONE'] %}Gönderildi
+              {% elif c.last_send_status=='SENDING' %}Gönderiliyor
+              {% elif c.last_send_status=='PAUSED_LIMIT' %}Limit
+              {% elif c.last_send_status=='NO_FILES' %}Dosya yok
+              {% elif c.last_send_status=='ERROR' %}Hata
+              {% else %}{{ c.last_send_status }}{% endif %}
+            </span>
+
+            {% if c.last_send_at_local %}
+              <div class="muted small">Son: {{ c.last_send_at_local }} · Dosya: {{ c.last_send_files }}</div>
+            {% endif %}
+            {% if c.last_error %}
+              <div class="muted small" title="{{ c.last_error }}" style="max-width:240px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+                {{ c.last_error }}
+              </div>
+            {% endif %}
+          </div>
+        {% endif %}
+      </div>
+
+      <div class="col-action">
+        <div class="actions-inline">
+          <form method="post" action="/send/instant" class="inline">
+            <input type="hidden" name="company_id" value="{{ c.id }}">
+            <button class="btn btn-sm" type="submit" {% if (not wa_ok) or (c.ready_count==0) %}disabled{% endif %}>
+              Hemen Gönder
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+<script>
+function ppSelectAll(on){
+  document.querySelectorAll('input.row-select').forEach(cb => cb.checked = on);
+}
+function ppSelectedIds(){
+  return Array.from(document.querySelectorAll('input.row-select:checked')).map(x => x.value);
+}
+function ppFillBulk(kind){
+  const ids = ppSelectedIds();
+  if(ids.length===0){
+    alert('Seçim yok.');
+    return false;
+  }
+  if(kind==='plan'){
+    document.getElementById('bulk_plan_ids').value = ids.join(',');
+    const dt = document.getElementById('bulk_plan_dt').value;
+    if(!dt){ alert('Tarih/Saat seç.'); return false; }
+  }else{
+    document.getElementById('bulk_send_ids').value = ids.join(',');
+  }
+  return true;
+}
+</script>
+
+{% endblock %}
