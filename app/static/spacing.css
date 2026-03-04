@@ -1,0 +1,8 @@
+/* DASH_SPACING_PATCH_V1 */
+:root{ --pp-gap:16px; }
+
+/* ensure mt is a consistent gap */
+.mt{ margin-top: var(--pp-gap) !important; }
+
+/* dashboard: add breathing room between stacked grids */
+.grid4 + .grid2{ margin-top: var(--pp-gap) !important; }

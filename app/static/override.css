@@ -1,0 +1,33 @@
+/* OVERRIDE_LAYOUT_V14 - stabilize layout: content always starts at top */
+html, body { height:100% !important; margin:0 !important; }
+body { overflow:hidden !important; }
+
+.app-shell { display:flex !important; height:100vh !important; width:100vw !important; }
+
+.sidebar{
+  position:fixed !important;
+  top:0 !important; left:0 !important;
+  width:260px !important;
+  height:100vh !important;
+  overflow:auto !important;
+  z-index:999 !important;
+}
+
+.content{
+  margin-left:260px !important;
+  height:100vh !important;
+  width:calc(100vw - 260px) !important;
+  overflow:auto !important;    /* scroll here */
+  padding:18px 18px 28px !important;
+  display:block !important;
+}
+
+/* Kill any accidental top spacers */
+.content > * { margin-top:0 !important; }
+.content .page, .content .container, .content .wrap { margin-top:0 !important; padding-top:0 !important; }
+.content .card:first-child { margin-top:0 !important; }
+h1,h2,h3 { margin-top:0 !important; }
+
+.content::-webkit-scrollbar{width:10px}
+.content::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12);border-radius:10px}
+.content::-webkit-scrollbar-track{background:rgba(0,0,0,.15)}
